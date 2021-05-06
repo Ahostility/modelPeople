@@ -7,14 +7,14 @@ from graphviz import Source
 import numpy as np
 
 
-def example():
+def example():#
     data = np.random.randint(low=-2, high=3, size=10)
     df = pd.DataFrame(data=data, columns=['value'])
     df['value'] = df.value.apply(lambda i: f"{i} < 0: {i}" if i < 0 else f"{i}>=0: 1")
     print(df)
 
 
-def get_write() -> tuple:
+def checkDataCSV() -> tuple:
     top_layer = pd.read_excel(io='ML_NIR_DATE_ASK.xlsx',
                               sheet_name='Пропуски_занятий',
                               usecols=[0, 1, 3, 5, 6, 7, 10, 11, 12, 13, 17]
@@ -53,7 +53,7 @@ def prediction(pred, test:list) -> None:
     print(answer)
 
 
-def createGraph(classificator, features) -> None:
+def treeGraph(classificator, features) -> None:
     print(len(features))
     graph = Source(export_graphviz(classificator, out_file=None,
                                    filled=True, rounded=True,
@@ -69,6 +69,6 @@ def createGraph(classificator, features) -> None:
 
 if __name__ == '__main__':
     # print(get_write())
-    model = get_write()
+    model = checkDataCSV()
     classification = decision(model[0], model[1])
-    print(createGraph(classification, model[0]))
+    print(treeGraph(classification, model[0]))
