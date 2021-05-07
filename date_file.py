@@ -5,17 +5,12 @@ from sklearn.tree import export_graphviz
 from IPython.display import Image
 from graphviz import Source
 import numpy as np
+import joblib
+import sys
 
 
-def example():#
-    data = np.random.randint(low=-2, high=3, size=10)
-    df = pd.DataFrame(data=data, columns=['value'])
-    df['value'] = df.value.apply(lambda i: f"{i} < 0: {i}" if i < 0 else f"{i}>=0: 1")
-    print(df)
-
-
-def checkDataCSV() -> tuple:
-    top_layer = pd.read_excel(io='ML_NIR_DATE_ASK.xlsx',
+def checkDataCSV(file_csv) -> tuple:
+    top_layer = pd.read_excel(io=file_csv,
                               sheet_name='Пропуски_занятий',
                               usecols=[0, 1, 3, 5, 6, 7, 10, 11, 12, 13, 17]
                               )
@@ -32,25 +27,40 @@ def checkDataCSV() -> tuple:
     return table_personal_X, standart_answer_Z
 
 
-def decision(x, y) -> DecisionTreeClassifier:
+def learnModel(x, y):
+    print(len(x))
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=1)
-    # print(f"x_train: {x_train}")
     clf = DecisionTreeClassifier(criterion="entropy", max_depth=10)
     clf = clf.fit(x_train, y_train)  # Класификатор дерева решений из полученной выборки
-    y_pred = clf.predict(x_test)
+
     print("Accuracy on training set: {:.3f}".format(clf.score(x_train, y_train)))
     print("Accuracy on test set: {:.3f}".format(clf.score(x_test, y_test)))
-    print(f"Probability: {clf.predict_proba(x_test)}")
+    save_model(clf)
+
+    return x_test
+
+
+def prediction(csv_test,csv) -> DecisionTreeClassifier:
+    choice = input("Enter choice for Data: ")
+    if choice == '1':
+        # for test use
+        print(f"Model is complete, we choice 1")
+        model = load_model()
+        x_test, y_test = csv_test[0],csv_test[1]
+        print("Accuracy on test set: {:.3f}".format(model.score(x_test,y_test)))
+    else:
+        #for learn model
+        print(f"To Learn model, we choice 2")
+        x_test = learnModel(csv[0], csv[1])
+        model = load_model()
+
+    y_pred = model.predict(x_test)
+    print(f"Probability: {model.predict_proba(x_test)}")
     index_test_X = list(x_test.loc[:, 'Причина пропуска'].index)
     print(f"Answer: {y_pred}")
-    prediction(y_pred, index_test_X)
-    return clf
-
-
-def prediction(pred, test:list) -> None:
-    answer_pil = pd.Series(list(pred), index=test)
-    answer = pd.DataFrame({'Answer': answer_pil})
-    print(answer)
+    predictionAnswer(y_pred, index_test_X)
+    treeGraph(model,x_test)
+    return model
 
 
 def treeGraph(classificator, features) -> None:
@@ -67,8 +77,31 @@ def treeGraph(classificator, features) -> None:
     print("Complete png_create")
 
 
+def predictionAnswer(pred, test: list) -> None:
+    answer_pil = pd.Series(list(pred), index=test)
+    answer = pd.DataFrame({'Answer': answer_pil})
+    print(answer)
+
+
+def save_model(classificator) -> None:
+    try:
+        joblib.dump(classificator,"model.pkl")
+        print("Complete save model!")
+    except:
+        print("error")
+
+
+def load_model() -> DecisionTreeClassifier:
+    try:
+        clf = joblib.load("model.pkl")
+        print("Open model!")
+        return clf
+    except:
+        print("Ooops, not Model!")
+        sys.exit()
+
+
 if __name__ == '__main__':
-    # print(get_write())
-    model = checkDataCSV()
-    classification = decision(model[0], model[1])
-    print(treeGraph(classification, model[0]))
+    test = checkDataCSV('ML_TEST.xlsx')
+    data = checkDataCSV('ML_NIR_DATE_ASK.xlsx')
+    prediction(test,data)
